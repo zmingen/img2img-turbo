@@ -227,3 +227,11 @@ class Pix2Pix_Turbo(torch.nn.Module):
         sd["state_dict_unet"] = {k: v for k, v in self.unet.state_dict().items() if "lora" in k or "conv_in" in k}
         sd["state_dict_vae"] = {k: v for k, v in self.vae.state_dict().items() if "lora" in k or "skip" in k}
         torch.save(sd, outf)
+
+    def release_memory(self):
+        del self.tokenizer
+        del self.text_encoder
+        del self.vae
+        del self.unet
+
+        torch.cuda.empty_cache()
