@@ -1,9 +1,9 @@
 # 定义共同参数
-PRETRAINED_MODEL_PATH=""
+PRETRAINED_MODEL_PATH="stabilityai/sd-turbo"
 RESOLUTION=512
 BATCH_SIZE=2
 VIZ_FREQ=25
-NUM_EPOCHS=4
+NUM_EPOCHS=5
 LAMBDA_CLIPSIM=-1
 REPORT_TO="wandb"
 
@@ -26,6 +26,6 @@ for i in {1..5}; do
     --report_to="$REPORT_TO" \
     --tracker_project_name="$PROJECT_NAME" \
     --num_training_epochs=$NUM_EPOCHS \
-    --lambda_clipsim=$LAMBDA_CLIPSIM
+    --lambda_clipsim=$LAMBDA_CLIPSIM \
     --checkpointing_steps=200
 done

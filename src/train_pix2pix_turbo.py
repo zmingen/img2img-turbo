@@ -49,7 +49,9 @@ def main(args):
         net_pix2pix = Pix2Pix_Turbo(lora_rank_unet=args.lora_rank_unet, lora_rank_vae=args.lora_rank_vae)
         net_pix2pix.set_train()
     else:
-        net_pix2pix = Pix2Pix_Turbo(pretrained_path=args.pretrained_model_name_or_path, lora_rank_unet=args.lora_rank_unet, lora_rank_vae=args.lora_rank_vae)
+        net_pix2pix = Pix2Pix_Turbo(pretrained_path=args.pretrained_model_name_or_path, 
+                                    lora_rank_unet=args.lora_rank_unet, 
+                                    lora_rank_vae=args.lora_rank_vae)
         net_pix2pix.set_train()
 
     if args.enable_xformers_memory_efficient_attention:
@@ -75,11 +77,11 @@ def main(args):
     net_disc.cv_ensemble.requires_grad_(False)
     net_disc.train()
 
-    net_lpips = lpips.LPIPS(net='vgg').cuda()
     net_clip, _ = clip.load("ViT-B/32", device="cuda")
     net_clip.requires_grad_(False)
     net_clip.eval()
-
+    
+    net_lpips = lpips.LPIPS(net='vgg').cuda()
     net_lpips.requires_grad_(False)
 
     # make the optimizer
@@ -166,6 +168,7 @@ def main(args):
                 mode="clean", custom_image_tranform=fn_transform, description="", verbose=True)
 
     # start the training loop
+    best_fid = float('inf') 
     global_step = 0
     for epoch in range(0, args.num_training_epochs):
         for step, batch in enumerate(dl_train):
@@ -292,11 +295,23 @@ def main(args):
                                 outf = os.path.join(args.output_dir, "eval", f"fid_{global_step}", f"val_{step}.png")
                                 output_pil.save(outf)
                         if args.track_val_fid:
-                            curr_stats = get_folder_features(os.path.join(args.output_dir, "eval", f"fid_{global_step}"), model=feat_model, num_workers=0, num=None,
-                                    shuffle=False, seed=0, batch_size=8, device=torch.device("cuda"),
+                            curr_stats = get_folder_features(
+                                    os.path.join(args.output_dir, "eval", f"fid_{global_step}"), 
+                                    model=feat_model, 
+                                    num_workers=0, 
+                                    num=None,
+                                    shuffle=False, 
+                                    seed=0, 
+                                    batch_size=8, 
+                                    device=torch.device("cuda"),
                                     mode="clean", custom_image_tranform=fn_transform, description="", verbose=True)
                             fid_score = fid_from_feats(ref_stats, curr_stats)
                             logs["val/clean_fid"] = fid_score
+                            if fid_score < best_fid and global_step > 100:  # 如果是在最小化指标
+                                best_fid = fid_score
+                                best_model_path = os.path.join(args.output_dir, "checkpoints", "best_model.pkl")
+                                accelerator.unwrap_model(net_pix2pix).save_model(best_model_path)
+                            
                         logs["val/l2"] = np.mean(l_l2)
                         logs["val/lpips"] = np.mean(l_lpips)
                         logs["val/clipsim"] = np.mean(l_clipsim)

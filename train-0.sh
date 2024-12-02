@@ -1,17 +1,17 @@
 # 定义共同参数
-PRETRAINED_MODEL_PATH=""
+PRETRAINED_MODEL_PATH="stabilityai/sd-turbo"
 RESOLUTION=512
 BATCH_SIZE=2
 VIZ_FREQ=25
-NUM_EPOCHS=4
+NUM_EPOCHS=100
 LAMBDA_CLIPSIM=-1
 REPORT_TO="wandb"
 
 # 循环处理不同的输出目录和数据集
-for i in {1..5}; do
-  OUTPUT_DIR="output/pix2pix_turbo/sequence_angel_$i"
-  DATASET_FOLDER="data/oct/sequence_angel_$i"
-  PROJECT_NAME="pix2pix_turbo_sequence_angel_$i"
+for i in {0..0}; do
+  OUTPUT_DIR="output/pix2pix_turbo/angel_augmentation2_$i"
+  DATASET_FOLDER="data/oct/angel_$i"
+  PROJECT_NAME="pix2pix_turbo_angel_$i"
 
   # 执行 accelerate 命令
   accelerate launch src/train_pix2pix_turbo.py \
@@ -27,5 +27,5 @@ for i in {1..5}; do
     --tracker_project_name="$PROJECT_NAME" \
     --num_training_epochs=$NUM_EPOCHS \
     --lambda_clipsim=$LAMBDA_CLIPSIM
-    --checkpointing_steps=200
+    --checkpointing_steps=500
 done
